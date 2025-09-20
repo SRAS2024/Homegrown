@@ -9,27 +9,28 @@
       *{box-sizing:border-box}
       body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";color:var(--ink);background:var(--bg)}
       .container{max-width:1100px;margin:0 auto;padding:0 16px}
-      .header{position:sticky;top:0;z-index:10;background:var(--green);color:#fff;box-shadow:0 2px 6px rgb(0 0 0 / 12%)}
+      .header{position:sticky;top:0;z-index:10;background:var(--green);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.12)}
       .header-inner{display:flex;align-items:center;justify-content:space-between;padding:10px 16px}
       .brand{display:flex;align-items:center;gap:10px;cursor:pointer}
       .logo{width:34px;height:34px;border-radius:50%;background:#fff;color:var(--green);display:grid;place-items:center;font-weight:800}
       .sub{font-size:12px;opacity:.9;margin-top:-2px}
       .cart-btn{position:relative;border:0;background:transparent;color:#fff;cursor:pointer;padding:6px;border-radius:999px}
-      .badge{position:absolute;right:-4px;top:-4px;background:#fff;color:var(--green);font-weight:700;font-size:12px;padding:2px 6px;border-radius:999px;box-shadow:0 1px 2px rgb(0 0 0 / 20%);min-width:22px;text-align:center}
+      .badge{position:absolute;right:-4px;top:-4px;background:#fff;color:var(--green);font-weight:700;font-size:12px;padding:2px 6px;border-radius:999px;box-shadow:0 1px 2px rgba(0,0,0,.2);min-width:22px;text-align:center}
       .hero{min-height:70vh;display:grid;place-items:center;background:url("https://images.unsplash.com/photo-1501004318641-b39e6451bec6?q=80&w=1600&auto=format&fit=crop") center/cover no-repeat}
-      .hero-card{background:rgb(0 0 0 / 55%);color:#fff;border-radius:16px;padding:28px}
+      .hero-card{background:rgba(0,0,0,.55);color:#fff;border-radius:16px;padding:28px}
       .btn{display:inline-block;padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:600}
       .btn-primary{background:var(--green2);color:#000}
       .btn-ghost{background:#fff;color:var(--ink)}
       .section{padding:28px 0}
       .grid{display:grid;gap:16px}
-      @media (min-width:640px){.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}}
-      .card{background:var(--card);border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0 / 6%)}
+      @media (min-width:640px){.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+      .card{background:var(--card);border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
       .card img{width:100%;height:150px;object-fit:cover;display:block}
       .card-body{padding:14px}
       .muted{color:var(--muted)}
-      .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 6px 20px rgb(0 0 0 / 20%)}
+      .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
       .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #e2e8f0}
+      .row img{width:64px;height:64px;border-radius:8px;object-fit:cover}
       .qty-btn{width:28px;height:28px;border-radius:999px;border:0;background:#edf2f7;cursor:pointer;font-size:18px}
       .right{text-align:right}
       .totals{display:flex;justify-content:end;padding-top:12px;font-weight:700}
@@ -43,36 +44,64 @@
     <script type="text/babel">
       const { useState, useMemo, useEffect } = React;
 
-      // Fallback image generator. Shows the plant name inside a simple SVG.
-      function svgFallback(name) {
+      // Inline art generator so every product image lives in this file.
+      // Each plant gets a themed gradient and a simple leaf motif.
+      const ART_THEMES = {
+        snake:     ["#bbf7d0", "#86efac", "#14532d"],
+        spider:    ["#e5e7eb", "#cbd5e1", "#334155"],
+        peace:     ["#dcfce7", "#a7f3d0", "#065f46"],
+        aloe:      ["#cffafe", "#a5f3fc", "#155e75"],
+        rubber:    ["#fee2e2", "#fecaca", "#7f1d1d"],
+        boston:    ["#e9d5ff", "#c4b5fd", "#5b21b6"],
+        ivy:       ["#fef3c7", "#fde68a", "#92400e"],
+        pothos:    ["#f0abfc", "#e879f9", "#6b21a8"],
+        monstera:  ["#bae6fd", "#7dd3fc", "#075985"],
+        rosemary:  ["#fde68a", "#fcd34d", "#92400e"],
+        lavender:  ["#e9d5ff", "#d8b4fe", "#6b21a8"],
+        mint:      ["#ccfbf1", "#99f6e4", "#115e59"]
+      };
+
+      function plantArtSrc(id, name, w=800, h=450) {
+        const [c1, c2, text] = ART_THEMES[id] || ["#e2e8f0","#cbd5e1","#334155"];
+        const leaf = `
+          <path d="M10 80 C 80 10, 200 10, 300 80 C 200 90, 80 90, 10 80 Z" fill="${text}" opacity=".18"/>
+          <path d="M120 140 C 200 90, 350 90, 420 140 C 340 150, 200 160, 120 140 Z" fill="${text}" opacity=".14"/>
+          <rect x="${w-140}" y="${h-120}" rx="48" ry="48" width="120" height="100" fill="${text}" opacity=".08"/>
+        `;
         const svg =
-          `<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'>
+          `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>
              <defs>
                <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
-                 <stop offset='0%' stop-color='#bbf7d0'/>
-                 <stop offset='100%' stop-color='#86efac'/>
+                 <stop offset='0%' stop-color='${c1}'/>
+                 <stop offset='100%' stop-color='${c2}'/>
                </linearGradient>
              </defs>
              <rect width='100%' height='100%' fill='url(#g)'/>
-             <g fill='#14532d'>
-               <circle cx='330' cy='230' r='40' opacity='0.15'/>
-               <circle cx='60' cy='60' r='28' opacity='0.15'/>
-             </g>
+             <g>${leaf}</g>
              <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
-                   font-family='ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial'
-                   font-size='28' font-weight='700' fill='#14532d'>${name}</text>
+               font-family='ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial'
+               font-size='36' font-weight='800' fill='${text}'>${name}</text>
            </svg>`;
         return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
       }
 
+      // Twelve products. Images are generated from the id and name.
       const PRODUCTS = [
-        { id: "snake", name: "Snake Plant", price: 15, category: ["Air Purifying"], desc: "Produces oxygen at night, improving air quality.", img: "https://images.unsplash.com/photo-1545243424-0ce743321e11?q=80&w=800&auto=format&fit=crop" },
-        { id: "spider", name: "Spider Plant", price: 12, category: ["Air Purifying"], desc: "Filters formaldehyde and xylene from the air.", img: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?q=80&w=800&auto=format&fit=crop" },
-        { id: "peace", name: "Peace Lily", price: 18, category: ["Air Purifying", "Aromatic"], desc: "Removes mold spores and purifies the air.", img: "https://images.unsplash.com/photo-1587402092301-725e37c70fd3?q=80&w=800&auto=format&fit=crop" },
-        { id: "rosemary", name: "Rosemary", price: 15, category: ["Aromatic"], desc: "Fragrant culinary herb with evergreen texture.", img: "https://images.unsplash.com/photo-1598452963314-b9f34e7f3d5c?q=80&w=800&auto=format&fit=crop" },
-        { id: "aloe", name: "Aloe Vera", price: 10, category: ["Air Purifying"], desc: "Succulent that soothes skin and brightens a room.", img: "https://images.unsplash.com/photo-1583864697784-a0efc8379f70?q=80&w=800&auto=format&fit=crop" }
+        { id:"snake",    name:"Snake Plant",   price:15, category:["Air Purifying"], desc:"Produces oxygen at night, improving air quality." },
+        { id:"spider",   name:"Spider Plant",  price:12, category:["Air Purifying"], desc:"Filters formaldehyde and xylene from the air." },
+        { id:"peace",    name:"Peace Lily",    price:18, category:["Air Purifying","Aromatic"], desc:"Removes mold spores and purifies the air." },
+        { id:"aloe",     name:"Aloe Vera",     price:10, category:["Air Purifying"], desc:"Succulent that soothes skin and brightens a room." },
+        { id:"rubber",   name:"Rubber Plant",  price:16, category:["Air Purifying"], desc:"Glossy leaves and strong air filtering." },
+        { id:"boston",   name:"Boston Fern",   price:14, category:["Air Purifying"], desc:"Classic fronds that love humidity." },
+        { id:"ivy",      name:"English Ivy",   price:11, category:["Air Purifying"], desc:"Trailing vine known for filtering air." },
+        { id:"pothos",   name:"Pothos",        price:12, category:["Air Purifying"], desc:"Beginner friendly vine, also called Devil's Ivy." },
+        { id:"monstera", name:"Monstera",      price:20, category:["Air Purifying"], desc:"Iconic split leaves, bright indirect light." },
+        { id:"rosemary", name:"Rosemary",      price:15, category:["Aromatic"], desc:"Fragrant culinary herb with evergreen texture." },
+        { id:"lavender", name:"Lavender",      price:17, category:["Aromatic"], desc:"Soothing scent with purple blooms." },
+        { id:"mint",     name:"Mint",          price:9,  category:["Aromatic"], desc:"Fresh aroma for tea and cooking." }
       ];
-      const CATEGORIES = ["Air Purifying", "Aromatic"];
+
+      const CATEGORIES = ["Air Purifying","Aromatic"];
       const money = n => `$${n.toFixed(2)}`;
 
       function Header({ onLogo, onCart, count }) {
@@ -124,15 +153,15 @@
         );
       }
 
+      function PlantImg({ id, name }) {
+        const src = React.useMemo(() => plantArtSrc(id, name), [id, name]);
+        return <img src={src} alt={name} />;
+      }
+
       function ProductCard({ p, onAdd }) {
         return (
           <div className="card">
-            <img
-              src={p.img}
-              alt={p.name}
-              referrerPolicy="no-referrer"
-              onError={(e)=>{ e.currentTarget.onerror=null; e.currentTarget.src = svgFallback(p.name); }}
-            />
+            <PlantImg id={p.id} name={p.name} />
             <div className="card-body">
               <div style={{display:"flex",justifyContent:"space-between",gap:8}}>
                 <strong>{p.name}</strong>
@@ -169,13 +198,7 @@
         const line = item.product.price * item.qty;
         return (
           <div className="row">
-            <img
-              src={item.product.img}
-              alt=""
-              style={{width:64,height:64,objectFit:"cover",borderRadius:8}}
-              referrerPolicy="no-referrer"
-              onError={(e)=>{ e.currentTarget.onerror=null; e.currentTarget.src = svgFallback(item.product.name); }}
-            />
+            <PlantImg id={item.product.id} name={item.product.name} />
             <div style={{flex:1}}>
               <div><strong>{item.product.name}</strong></div>
               <div className="muted">{money(item.product.price)} each</div>
@@ -185,7 +208,7 @@
               <span style={{display:"inline-block",width:60,textAlign:"center"}}>Qty. {item.qty}</span>
               <button className="qty-btn" onClick={onInc} aria-label={`Increase ${item.product.name}`}>+</button>
             </div>
-            <div className="right" style={{width:90,fontWeight:700}}>{money(line)}</div>
+            <div className="right" style={{width:110,fontWeight:700}}>{money(line)}</div>
             <button className="btn btn-ghost" onClick={onRemove}>Delete</button>
           </div>
         );
@@ -227,7 +250,7 @@
       function App() {
         const [screen, setScreen] = useState("landing");
         const [toast, setToast] = useState("");
-        const [cart, setCart] = useState({}); // id -> qty
+        const [cart, setCart] = useState({});
 
         const items = useMemo(
           () => Object.entries(cart).map(([id, qty]) => ({ product: PRODUCTS.find(p => p.id === id), qty })),
