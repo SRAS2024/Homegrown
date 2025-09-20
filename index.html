@@ -34,7 +34,6 @@
       .right{text-align:right}
       .totals{display:flex;justify-content:end;padding-top:12px;font-weight:700}
     </style>
-    <!-- React and Babel from CDNs -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -44,12 +43,34 @@
     <script type="text/babel">
       const { useState, useMemo, useEffect } = React;
 
+      // Fallback image generator. Shows the plant name inside a simple SVG.
+      function svgFallback(name) {
+        const svg =
+          `<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'>
+             <defs>
+               <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+                 <stop offset='0%' stop-color='#bbf7d0'/>
+                 <stop offset='100%' stop-color='#86efac'/>
+               </linearGradient>
+             </defs>
+             <rect width='100%' height='100%' fill='url(#g)'/>
+             <g fill='#14532d'>
+               <circle cx='330' cy='230' r='40' opacity='0.15'/>
+               <circle cx='60' cy='60' r='28' opacity='0.15'/>
+             </g>
+             <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
+                   font-family='ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial'
+                   font-size='28' font-weight='700' fill='#14532d'>${name}</text>
+           </svg>`;
+        return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+      }
+
       const PRODUCTS = [
-        { id: "snake", name: "Snake Plant", price: 15, category: ["Air Purifying"], desc: "Produces oxygen at night, improving air quality.", img: "https://images.unsplash.com/photo-1614594956216-5d3efec2c58b?q=80&w=400&auto=format&fit=crop" },
-        { id: "spider", name: "Spider Plant", price: 12, category: ["Air Purifying"], desc: "Filters formaldehyde and xylene from the air.", img: "https://images.unsplash.com/photo-1604937455095-ef2c7c0f8d3c?q=80&w=400&auto=format&fit=crop" },
-        { id: "peace", name: "Peace Lily", price: 18, category: ["Air Purifying", "Aromatic"], desc: "Removes mold spores and purifies the air.", img: "https://images.unsplash.com/photo-1614594957056-6aef0a1ad6d1?q=80&w=400&auto=format&fit=crop" },
-        { id: "rosemary", name: "Rosemary", price: 15, category: ["Aromatic"], desc: "Fragrant culinary herb with evergreen texture.", img: "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=400&auto=format&fit=crop" },
-        { id: "aloe", name: "Aloe Vera", price: 10, category: ["Air Purifying"], desc: "Succulent that soothes skin and brightens a room.", img: "https://images.unsplash.com/photo-1615485737651-6b1fba07f657?q=80&w=400&auto=format&fit=crop" }
+        { id: "snake", name: "Snake Plant", price: 15, category: ["Air Purifying"], desc: "Produces oxygen at night, improving air quality.", img: "https://images.unsplash.com/photo-1545243424-0ce743321e11?q=80&w=800&auto=format&fit=crop" },
+        { id: "spider", name: "Spider Plant", price: 12, category: ["Air Purifying"], desc: "Filters formaldehyde and xylene from the air.", img: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?q=80&w=800&auto=format&fit=crop" },
+        { id: "peace", name: "Peace Lily", price: 18, category: ["Air Purifying", "Aromatic"], desc: "Removes mold spores and purifies the air.", img: "https://images.unsplash.com/photo-1587402092301-725e37c70fd3?q=80&w=800&auto=format&fit=crop" },
+        { id: "rosemary", name: "Rosemary", price: 15, category: ["Aromatic"], desc: "Fragrant culinary herb with evergreen texture.", img: "https://images.unsplash.com/photo-1598452963314-b9f34e7f3d5c?q=80&w=800&auto=format&fit=crop" },
+        { id: "aloe", name: "Aloe Vera", price: 10, category: ["Air Purifying"], desc: "Succulent that soothes skin and brightens a room.", img: "https://images.unsplash.com/photo-1583864697784-a0efc8379f70?q=80&w=800&auto=format&fit=crop" }
       ];
       const CATEGORIES = ["Air Purifying", "Aromatic"];
       const money = n => `$${n.toFixed(2)}`;
@@ -106,7 +127,12 @@
       function ProductCard({ p, onAdd }) {
         return (
           <div className="card">
-            <img src={p.img} alt={p.name} />
+            <img
+              src={p.img}
+              alt={p.name}
+              referrerPolicy="no-referrer"
+              onError={(e)=>{ e.currentTarget.onerror=null; e.currentTarget.src = svgFallback(p.name); }}
+            />
             <div className="card-body">
               <div style={{display:"flex",justifyContent:"space-between",gap:8}}>
                 <strong>{p.name}</strong>
@@ -143,7 +169,13 @@
         const line = item.product.price * item.qty;
         return (
           <div className="row">
-            <img src={item.product.img} alt="" style={{width:64,height:64,objectFit:"cover",borderRadius:8}} />
+            <img
+              src={item.product.img}
+              alt=""
+              style={{width:64,height:64,objectFit:"cover",borderRadius:8}}
+              referrerPolicy="no-referrer"
+              onError={(e)=>{ e.currentTarget.onerror=null; e.currentTarget.src = svgFallback(item.product.name); }}
+            />
             <div style={{flex:1}}>
               <div><strong>{item.product.name}</strong></div>
               <div className="muted">{money(item.product.price)} each</div>
