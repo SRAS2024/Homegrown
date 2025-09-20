@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Homegrown • Nursery Shop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root { --green:#2e7d32; --green2:#43a047; --ink:#0f172a; --muted:#64748b; --bg:#f0fdf4; --card:#ffffff; }
+      *{box-sizing:border-box}
+      body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";color:var(--ink);background:var(--bg)}
+      .container{max-width:1100px;margin:0 auto;padding:0 16px}
+      .header{position:sticky;top:0;z-index:10;background:var(--green);color:#fff;box-shadow:0 2px 6px rgb(0 0 0 / 12%)}
+      .header-inner{display:flex;align-items:center;justify-content:space-between;padding:10px 16px}
+      .brand{display:flex;align-items:center;gap:10px;cursor:pointer}
+      .logo{width:34px;height:34px;border-radius:50%;background:#fff;color:var(--green);display:grid;place-items:center;font-weight:800}
+      .sub{font-size:12px;opacity:.9;margin-top:-2px}
+      .cart-btn{position:relative;border:0;background:transparent;color:#fff;cursor:pointer;padding:6px;border-radius:999px}
+      .badge{position:absolute;right:-4px;top:-4px;background:#fff;color:var(--green);font-weight:700;font-size:12px;padding:2px 6px;border-radius:999px;box-shadow:0 1px 2px rgb(0 0 0 / 20%);min-width:22px;text-align:center}
+      .hero{min-height:70vh;display:grid;place-items:center;background:url("https://images.unsplash.com/photo-1501004318641-b39e6451bec6?q=80&w=1600&auto=format&fit=crop") center/cover no-repeat}
+      .hero-card{background:rgb(0 0 0 / 55%);color:#fff;border-radius:16px;padding:28px}
+      .btn{display:inline-block;padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:600}
+      .btn-primary{background:var(--green2);color:#000}
+      .btn-ghost{background:#fff;color:var(--ink)}
+      .section{padding:28px 0}
+      .grid{display:grid;gap:16px}
+      @media (min-width:640px){.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      .card{background:var(--card);border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0 / 6%)}
+      .card img{width:100%;height:150px;object-fit:cover;display:block}
+      .card-body{padding:14px}
+      .muted{color:var(--muted)}
+      .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 6px 20px rgb(0 0 0 / 20%)}
+      .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #e2e8f0}
+      .qty-btn{width:28px;height:28px;border-radius:999px;border:0;background:#edf2f7;cursor:pointer;font-size:18px}
+      .right{text-align:right}
+      .totals{display:flex;justify-content:end;padding-top:12px;font-weight:700}
+    </style>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      const { useState, useMemo, useEffect } = React;
+
+      const PRODUCTS = [
+        { id: "snake", name: "Snake Plant", price: 15, category: ["Air Purifying"], desc: "Produces oxygen at night, improving air quality.", img: "https://images.unsplash.com/photo-1614594956216-5d3efec2c58b?q=80&w=400&auto=format&fit=crop" },
+        { id: "spider", name: "Spider Plant", price: 12, category: ["Air Purifying"], desc: "Filters formaldehyde and xylene from the air.", img: "https://images.unsplash.com/photo-1604937455095-ef2c7c0f8d3c?q=80&w=400&auto=format&fit=crop" },
+        { id: "peace", name: "Peace Lily", price: 18, category: ["Air Purifying", "Aromatic"], desc: "Removes mold spores and purifies the air.", img: "https://images.unsplash.com/photo-1614594957056-6aef0a1ad6d1?q=80&w=400&auto=format&fit=crop" },
+        { id: "rosemary", name: "Rosemary", price: 15, category: ["Aromatic"], desc: "Fragrant culinary herb with evergreen texture.", img: "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=400&auto=format&fit=crop" },
+        { id: "aloe", name: "Aloe Vera", price: 10, category: ["Air Purifying"], desc: "Succulent that soothes skin and brightens a room.", img: "https://images.unsplash.com/photo-1615485737651-6b1fba07f657?q=80&w=400&auto=format&fit=crop" }
+      ];
+      const CATEGORIES = ["Air Purifying", "Aromatic"];
+      const money = n => `$${n.toFixed(2)}`;
+
+      function Header({ onLogo, onCart, count }) {
+        return (
+          <div className="header">
+            <div className="header-inner container">
+              <div className="brand" onClick={onLogo} role="button" aria-label="Go to landing">
+                <div className="logo">HG</div>
+                <div>
+                  <div style={{fontWeight:800,lineHeight:1}}>Homegrown</div>
+                  <div className="sub">Where green meets serenity</div>
+                </div>
+              </div>
+              <button className="cart-btn" onClick={onCart} aria-label="Open cart">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM3 2h2l3.6 7.59-1.35 2.45A2 2 0 0 0 9 15h9a2 2 0 0 0 1.79-1.11l3.58-7.16A1 1 0 0 0 22.5 5H6.21l-1-2H3Z"/>
+                </svg>
+                {count > 0 && <span className="badge">{count}</span>}
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      function Toast({ msg, onDone }) {
+        useEffect(() => {
+          if (!msg) return;
+          const t = setTimeout(onDone, 1400);
+          return () => clearTimeout(t);
+        }, [msg, onDone]);
+        if (!msg) return null;
+        return <div className="toast">{msg}</div>;
+      }
+
+      function Landing({ onStart }) {
+        return (
+          <section className="hero">
+            <div className="container">
+              <div className="hero-card">
+                <h1 style={{margin:0}}>Welcome to Homegrown</h1>
+                <div className="sub" style={{color:"#d1fae5"}}>Where green meets serenity</div>
+                <p style={{maxWidth:740}}>
+                  Our mission is to bring nature closer to you. We offer a wide range of high quality plants that enhance your space and support a healthy lifestyle.
+                </p>
+                <button className="btn btn-primary" onClick={onStart}>Get started</button>
+              </div>
+            </div>
+          </section>
+        );
+      }
+
+      function ProductCard({ p, onAdd }) {
+        return (
+          <div className="card">
+            <img src={p.img} alt={p.name} />
+            <div className="card-body">
+              <div style={{display:"flex",justifyContent:"space-between",gap:8}}>
+                <strong>{p.name}</strong>
+                <strong style={{color:"var(--green)"}}>{money(p.price)}</strong>
+              </div>
+              <p className="muted" style={{marginTop:6}}>{p.desc}</p>
+              <button className="btn btn-primary" onClick={() => onAdd(p)}>Add to cart</button>
+            </div>
+          </div>
+        );
+      }
+
+      function Products({ toLanding, toCart, add, count }) {
+        return (
+          <>
+            <Header onLogo={toLanding} onCart={toCart} count={count} />
+            <main className="container section">
+              {CATEGORIES.map(cat => (
+                <section key={cat} className="section" style={{paddingTop:0}}>
+                  <h2 style={{margin:"0 0 12px 0"}}>{cat} Plants</h2>
+                  <div className="grid grid-3">
+                    {PRODUCTS.filter(p => p.category.includes(cat)).map(p => (
+                      <ProductCard key={`${cat}-${p.id}`} p={p} onAdd={add} />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </main>
+          </>
+        );
+      }
+
+      function CartRow({ item, onDec, onInc, onRemove }) {
+        const line = item.product.price * item.qty;
+        return (
+          <div className="row">
+            <img src={item.product.img} alt="" style={{width:64,height:64,objectFit:"cover",borderRadius:8}} />
+            <div style={{flex:1}}>
+              <div><strong>{item.product.name}</strong></div>
+              <div className="muted">{money(item.product.price)} each</div>
+            </div>
+            <div>
+              <button className="qty-btn" onClick={onDec} aria-label={`Decrease ${item.product.name}`}>−</button>
+              <span style={{display:"inline-block",width:60,textAlign:"center"}}>Qty. {item.qty}</span>
+              <button className="qty-btn" onClick={onInc} aria-label={`Increase ${item.product.name}`}>+</button>
+            </div>
+            <div className="right" style={{width:90,fontWeight:700}}>{money(line)}</div>
+            <button className="btn btn-ghost" onClick={onRemove}>Delete</button>
+          </div>
+        );
+      }
+
+      function Cart({ toProducts, items, inc, dec, remove }) {
+        const total = items.reduce((s, it) => s + it.qty * it.product.price, 0);
+        const count = items.reduce((s, it) => s + it.qty, 0);
+        return (
+          <>
+            <Header onLogo={toProducts} onCart={() => {}} count={count} />
+            <main className="container section">
+              <h2>Shopping cart</h2>
+              {items.length === 0 ? (
+                <p className="muted">Your cart is empty.</p>
+              ) : (
+                <div className="card" style={{padding:16}}>
+                  {items.map(it => (
+                    <CartRow
+                      key={it.product.id}
+                      item={it}
+                      onInc={() => inc(it.product.id)}
+                      onDec={() => dec(it.product.id)}
+                      onRemove={() => remove(it.product.id)}
+                    />
+                  ))}
+                  <div className="totals">Total cart amount: {money(total)}</div>
+                  <div style={{display:"flex",justifyContent:"end",gap:10,marginTop:12}}>
+                    <button className="btn btn-ghost" onClick={toProducts}>Continue shopping</button>
+                    <button className="btn btn-primary">Checkout</button>
+                  </div>
+                </div>
+              )}
+            </main>
+          </>
+        );
+      }
+
+      function App() {
+        const [screen, setScreen] = useState("landing");
+        const [toast, setToast] = useState("");
+        const [cart, setCart] = useState({}); // id -> qty
+
+        const items = useMemo(
+          () => Object.entries(cart).map(([id, qty]) => ({ product: PRODUCTS.find(p => p.id === id), qty })),
+          [cart]
+        );
+        const count = items.reduce((s, it) => s + it.qty, 0);
+
+        const add = (p) => {
+          setCart(prev => ({ ...prev, [p.id]: (prev[p.id] || 0) + 1 }));
+          setToast(`${p.name} Added to Cart`);
+        };
+        const inc = id => setCart(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+        const dec = id => setCart(prev => {
+          const n = (prev[id] || 0) - 1;
+          const next = { ...prev };
+          if (n > 0) next[id] = n; else delete next[id];
+          return next;
+        });
+        const remove = id => setCart(prev => { const next = { ...prev }; delete next[id]; return next; });
+
+        return (
+          <>
+            {screen === "landing" && <Landing onStart={() => setScreen("products")} />}
+            {screen === "products" && (
+              <Products
+                toLanding={() => setScreen("landing")}
+                toCart={() => setScreen("cart")}
+                add={add}
+                count={count}
+              />
+            )}
+            {screen === "cart" && (
+              <Cart
+                toProducts={() => setScreen("products")}
+                items={items}
+                inc={inc}
+                dec={dec}
+                remove={remove}
+              />
+            )}
+            <Toast msg={toast} onDone={() => setToast("")} />
+          </>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>
