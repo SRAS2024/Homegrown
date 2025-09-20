@@ -25,15 +25,19 @@
       .grid{display:grid;gap:16px}
       @media (min-width:640px){.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}}
       .card{background:var(--card);border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-      .card img{width:100%;height:150px;object-fit:cover;display:block}
+      .media{height:150px;border-bottom:1px solid #e2e8f0;background:#eef7ee}
+      .media svg{width:100%;height:100%;display:block}
       .card-body{padding:14px}
       .muted{color:var(--muted)}
       .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
       .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #e2e8f0}
-      .row img{width:64px;height:64px;border-radius:8px;object-fit:cover}
+      .thumb{width:64px;height:64px;border-radius:8px;overflow:hidden;background:#eef7ee}
+      .thumb svg{width:100%;height:100%;display:block}
       .qty-btn{width:28px;height:28px;border-radius:999px;border:0;background:#edf2f7;cursor:pointer;font-size:18px}
       .right{text-align:right}
       .totals{display:flex;justify-content:end;padding-top:12px;font-weight:700}
+      .tags{display:flex;gap:6px;margin:8px 0 0 0;flex-wrap:wrap}
+      .tag{font-size:11px;background:#e8f5e9;color:#1b5e20;border:1px solid #c8e6c9;border-radius:999px;padding:2px 8px}
     </style>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -44,55 +48,194 @@
     <script type="text/babel">
       const { useState, useMemo, useEffect } = React;
 
-      // Inline SVG art so each product has a consistent, accurate label and visual.
-      const ART_THEMES = {
-        snake:     ["#bbf7d0", "#86efac", "#14532d"],
-        spider:    ["#e5e7eb", "#cbd5e1", "#334155"],
-        peace:     ["#dcfce7", "#a7f3d0", "#065f46"],
-        aloe:      ["#cffafe", "#a5f3fc", "#155e75"],
-        rubber:    ["#fee2e2", "#fecaca", "#7f1d1d"],
-        boston:    ["#e9d5ff", "#c4b5fd", "#5b21b6"],
-        ivy:       ["#fef3c7", "#fde68a", "#92400e"],
-        pothos:    ["#f0abfc", "#e879f9", "#6b21a8"],
-        monstera:  ["#bae6fd", "#7dd3fc", "#075985"],
-        rosemary:  ["#fde68a", "#fcd34d", "#92400e"],
-        lavender:  ["#e9d5ff", "#d8b4fe", "#6b21a8"],
-        mint:      ["#ccfbf1", "#99f6e4", "#115e59"]
+      // Color themes per plant
+      const THEME = {
+        snake:     ["#c7f9cc","#80ed99","#22543d"],
+        spider:    ["#e2e8f0","#cbd5e1","#334155"],
+        peace:     ["#d1fae5","#a7f3d0","#065f46"],
+        aloe:      ["#cffafe","#a5f3fc","#155e75"],
+        rubber:    ["#fee2e2","#fecaca","#7f1d1d"],
+        boston:    ["#ede9fe","#c4b5fd","#5b21b6"],
+        ivy:       ["#fef3c7","#fde68a","#92400e"],
+        pothos:    ["#f0abfc","#e879f9","#6b21a8"],
+        monstera:  ["#bae6fd","#7dd3fc","#075985"],
+        rosemary:  ["#fde68a","#fcd34d","#92400e"],
+        lavender:  ["#f3e8ff","#e9d5ff","#6b21a8"],
+        mint:      ["#ccfbf1","#99f6e4","#115e59"]
       };
 
-      function leafPaths(color) {
-        return `
-          <path d="M20 110 C 90 40, 230 40, 300 110 C 220 120, 90 120, 20 110 Z" fill="${color}" opacity=".18"/>
-          <path d="M130 160 C 210 110, 360 110, 430 160 C 350 170, 210 180, 130 160 Z" fill="${color}" opacity=".14"/>
-          <circle cx="520" cy="340" r="46" fill="${color}" opacity=".08"/>
-        `;
+      // Reusable pot
+      function Pot({ ink }) {
+        return (
+          <g>
+            <rect x="90" y="108" width="140" height="54" rx="12" fill="#c2793b" />
+            <rect x="70" y="96" width="180" height="20" rx="10" fill="#e19a5c" />
+            <rect x="70" y="96" width="180" height="7" rx="4" fill="#f3b980" />
+            <ellipse cx="160" cy="162" rx="70" ry="10" fill="rgba(0,0,0,.08)" />
+          </g>
+        );
       }
 
-      function plantArtSrc(id, name, w=800, h=450) {
-        const [c1, c2, ink] = ART_THEMES[id] || ["#e2e8f0","#cbd5e1","#334155"];
-        const svg =
-          `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>
-             <defs>
-               <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
-                 <stop offset='0%' stop-color='${c1}'/>
-                 <stop offset='100%' stop-color='${c2}'/>
-               </linearGradient>
-             </defs>
-             <rect width='100%' height='100%' fill='url(#g)'/>
-             <g>${leafPaths(ink)}</g>
-             <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
-               font-family='ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial'
-               font-size='34' font-weight='800' fill='${ink}'>${name}</text>
-           </svg>`;
-        return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+      // Simple leaf helpers
+      function Leaf({ x, y, w, h, r=0, fill }) {
+        return <ellipse cx={x} cy={y} rx={w} ry={h} transform={`rotate(${r} ${x} ${y})`} fill={fill} />;
+      }
+      function HeartLeaf({ x, y, s=1, fill }) {
+        const d = `
+          M ${x} ${y}
+          c ${-18*s} ${-18*s}, ${-40*s} ${10*s}, 0 ${40*s}
+          c ${40*s} ${-30*s}, ${18*s} ${-58*s}, 0 ${-40*s} z`;
+        return <path d={d} fill={fill} />;
       }
 
-      function PlantImg({ id, name }) {
-        const src = React.useMemo(() => plantArtSrc(id, name), [id, name]);
-        return <img src={src} alt={name} />;
+      // Plant drawings
+      const PlantDraw = {
+        snake: (ink) => (
+          <g>
+            {[0,-18,18,-36,36].map((dx,i)=>(
+              <path key={i} d={`M ${160+dx} 100 Q ${160+dx-20} 40 ${160+dx-8} 10 Q ${160+dx+10} 45 ${160+dx} 100 Z`} fill="#2e7d32"/>
+            ))}
+            <Pot ink={ink}/>
+          </g>
+        ),
+        spider: (ink)=>(
+          <g>
+            {[ -80,-60,-40,-20,0,20,40,60,80 ].map((dx,i)=>(
+              <path key={i} d={`M 160 100 Q ${160+dx} 80 ${160+dx} 30`} stroke="#2e8b57" strokeWidth="6" fill="none" />
+            ))}
+            <circle cx="160" cy="98" r="10" fill="#2e8b57"/>
+            <Pot ink={ink}/>
+          </g>
+        ),
+        peace: (ink)=>(
+          <g>
+            <Leaf x={140} y={70} w={18} h={36} r={-25} fill="#227a3a"/>
+            <Leaf x={180} y={70} w={18} h={36} r={25} fill="#227a3a"/>
+            <path d="M160 30 c 20 30 20 60 0 70 c -20 -10 -20 -40 0 -70 z" fill="#fff"/>
+            <rect x="158" y="48" width="4" height="20" rx="2" fill="#facc15"/>
+            <Pot ink={ink}/>
+          </g>
+        ),
+        aloe: (ink)=>(
+          <g>
+            {[ -40,-20,0,20,40 ].map((dx,i)=>(
+              <path key={i} d={`M ${160+dx} 100 L ${160+dx-15} 55 L ${160+dx+5} 20 L ${160+dx+15} 55 Z`} fill="#1f9d68"/>
+            ))}
+            <Pot ink={ink}/>
+          </g>
+        ),
+        rubber: (ink)=>(
+          <g>
+            {[ -30,-10,10,30 ].map((dx,i)=>(
+              <Leaf key={i} x={160+dx} y={60} w={18} h={35} r={dx*1.2} fill="#2f6c4f"/>
+            ))}
+            {[ -30,-10,10,30 ].map((dx,i)=>(
+              <rect key={'v'+i} x={159+dx} y={45} width="2" height="30" fill="#103b2a"/>
+            ))}
+            <Pot ink={ink}/>
+          </g>
+        ),
+        boston: (ink)=>(
+          <g>
+            {[ -50,-25,0,25,50 ].map((dx,i)=>(
+              <g key={i}>
+                <path d={`M ${160+dx} 100 Q ${160+dx-15} 70 ${160+dx-25} 45`} stroke="#2e7d32" strokeWidth="3" fill="none"/>
+                {Array.from({length:8}).map((_,j)=>(
+                  <rect key={j} x={160+dx-30-(j*2)} y={58-j*6} width="14" height="4" rx="2" fill="#46a05b"/>
+                ))}
+              </g>
+            ))}
+            <Pot ink={ink}/>
+          </g>
+        ),
+        ivy: (ink)=>(
+          <g>
+            <path d="M 160 90 C 200 100, 240 120, 300 150" stroke="#2e7d32" strokeWidth="4" fill="none"/>
+            <path d="M 160 90 C 120 100, 80 120, 20 150" stroke="#2e7d32" strokeWidth="4" fill="none"/>
+            {[ 210,240,270,90,60,30 ].map((x,i)=>(
+              <path key={i} d={`M ${x} ${140 - (i%3)*10} l 8 -14 l 8 14 l -16 0 z`} fill="#2e7d32"/>
+            ))}
+            <Pot ink={ink}/>
+          </g>
+        ),
+        pothos: (ink)=>(
+          <g>
+            <path d="M 160 92 C 210 120, 240 140, 290 158" stroke="#178f4d" strokeWidth="4" fill="none"/>
+            <path d="M 160 92 C 110 120, 80 140, 30 158" stroke="#178f4d" strokeWidth="4" fill="none"/>
+            {[200,225,250,85,60,45].map((x,i)=>(
+              <HeartLeaf key={i} x={x} y={135-(i%3)*6} s={.5} fill="#30a46c"/>
+            ))}
+            <Pot ink={ink}/>
+          </g>
+        ),
+        monstera: (ink)=>(
+          <g>
+            <path d="M130 80 c 0 -35 60 -50 60 0 c 0 40 -60 40 -60 0 z" fill="#1f7a4f"/>
+            <rect x="158" y="60" width="4" height="30" fill="#0b4430"/>
+            <path d="M190 80 c 0 -35 60 -50 60 0 c 0 40 -60 40 -60 0 z" fill="#1f7a4f"/>
+            <rect x="218" y="60" width="4" height="30" fill="#0b4430"/>
+            <path d="M150 78 l 10 -6 M145 90 l 14 -4 M205 78 l 10 -6 M200 90 l 14 -4" stroke="#0b4430" strokeWidth="3"/>
+            <Pot ink={ink}/>
+          </g>
+        ),
+        rosemary: (ink)=>(
+          <g>
+            {[-30,-20,-10,0,10,20,30].map((dx,i)=>(
+              <g key={i}>
+                <rect x={158+dx} y="70" width="3" height="30" fill="#14532d"/>
+                {Array.from({length:6}).map((_,j)=>(
+                  <rect key={j} x={150+dx} y={72+j*5} width="10" height="2" fill="#2f855a"/>
+                ))}
+              </g>
+            ))}
+            <Pot ink={ink}/>
+          </g>
+        ),
+        lavender: (ink)=>(
+          <g>
+            {[-25,-10,10,25].map((dx,i)=>(
+              <g key={i}>
+                <rect x={159+dx} y="78" width="2" height="32" fill="#25664a"/>
+                {Array.from({length:6}).map((_,j)=>(
+                  <circle key={j} cx={160+dx} cy={80-j*5} r="4" fill="#8b5cf6"/>
+                ))}
+              </g>
+            ))}
+            <Pot ink={ink}/>
+          </g>
+        ),
+        mint: (ink)=>(
+          <g>
+            <Leaf x={150} y={75} w={18} h={12} r={-20} fill="#2ecc71"/>
+            <Leaf x={170} y={75} w={18} h={12} r={20} fill="#2ecc71"/>
+            <Leaf x={160} y={60} w={14} h={10} r={0} fill="#28b463"/>
+            <Pot ink={ink}/>
+          </g>
+        )
+      };
+
+      function PlantSVG({ id, name }) {
+        const [c1,c2,ink] = THEME[id] || ["#e2e8f0","#cbd5e1","#334155"];
+        return (
+          <svg viewBox="0 0 320 180" role="img" aria-label={name}>
+            <defs>
+              <linearGradient id={`g-${id}`} x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor={c1}/>
+                <stop offset="100%" stopColor={c2}/>
+              </linearGradient>
+            </defs>
+            <rect width="320" height="180" fill={`url(#g-${id})`} />
+            <g opacity=".12" fill={ink}>
+              <circle cx="280" cy="40" r="22" />
+              <path d="M20 40 C 70 15, 130 15, 180 40 C 130 46, 70 46, 20 40 Z" />
+            </g>
+            <g>{PlantDraw[id] ? PlantDraw[id](ink) : null}</g>
+            <text x="50%" y="38" textAnchor="middle" fontWeight="800" fontSize="16" fill={ink}>{name}</text>
+          </svg>
+        );
       }
 
-      // Twelve products, each with name, price, and generated image id
+      // Products. Peace Lily carries both tags but will render under the first section only.
       const PRODUCTS = [
         { id:"snake",    name:"Snake Plant",   price:15, desc:"Produces oxygen at night, improving air quality.", category:["Air Purifying"] },
         { id:"spider",   name:"Spider Plant",  price:12, desc:"Filters formaldehyde and xylene from the air.",     category:["Air Purifying"] },
@@ -161,22 +304,32 @@
       }
 
       function ProductCard({ p, onAdd }) {
+        // Show extra tags that are not the section label the card was rendered under
         return (
           <div className="card">
-            <PlantImg id={p.id} name={p.name} />
+            <div className="media">
+              <PlantSVG id={p.id} name={p.name} />
+            </div>
             <div className="card-body">
               <div style={{display:"flex",justifyContent:"space-between",gap:8}}>
                 <strong>{p.name}</strong>
                 <strong style={{color:"var(--green)"}}>{money(p.price)}</strong>
               </div>
               <p className="muted" style={{marginTop:6}}>{p.desc}</p>
-              <button className="btn btn-primary" onClick={() => onAdd(p)}>Add to cart</button>
+              {p.category.length > 1 && (
+                <div className="tags">
+                  {p.category.slice(1).map(tag => <span key={tag} className="tag">{tag}</span>)}
+                </div>
+              )}
+              <button className="btn btn-primary" style={{marginTop:10}} onClick={() => onAdd(p)}>Add to cart</button>
             </div>
           </div>
         );
       }
 
       function Products({ toLanding, toCart, add, count }) {
+        // Ensure each product renders once across the whole page
+        const seen = new Set();
         return (
           <>
             <Header onLogo={toLanding} onCart={toCart} count={count} />
@@ -185,9 +338,9 @@
                 <section key={cat} className="section" style={{paddingTop:0}}>
                   <h2 style={{margin:"0 0 12px 0"}}>{cat} Plants</h2>
                   <div className="grid grid-3">
-                    {PRODUCTS.filter(p => p.category.includes(cat)).map(p => (
-                      <ProductCard key={`${cat}-${p.id}`} p={p} onAdd={add} />
-                    ))}
+                    {PRODUCTS.filter(p => p.category.includes(cat))
+                      .filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; })
+                      .map(p => (<ProductCard key={p.id} p={p} onAdd={add} />))}
                   </div>
                 </section>
               ))}
@@ -200,7 +353,9 @@
         const line = item.product.price * item.qty;
         return (
           <div className="row">
-            <PlantImg id={item.product.id} name={item.product.name} />
+            <div className="thumb">
+              <PlantSVG id={item.product.id} name={item.product.name} />
+            </div>
             <div style={{flex:1}}>
               <div><strong>{item.product.name}</strong></div>
               <div className="muted">{money(item.product.price)} each</div>
