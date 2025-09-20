@@ -44,8 +44,7 @@
     <script type="text/babel">
       const { useState, useMemo, useEffect } = React;
 
-      // Inline art generator so every product image lives in this file.
-      // Each plant gets a themed gradient and a simple leaf motif.
+      // Inline SVG art so each product has a consistent, accurate label and visual.
       const ART_THEMES = {
         snake:     ["#bbf7d0", "#86efac", "#14532d"],
         spider:    ["#e5e7eb", "#cbd5e1", "#334155"],
@@ -61,13 +60,16 @@
         mint:      ["#ccfbf1", "#99f6e4", "#115e59"]
       };
 
-      function plantArtSrc(id, name, w=800, h=450) {
-        const [c1, c2, text] = ART_THEMES[id] || ["#e2e8f0","#cbd5e1","#334155"];
-        const leaf = `
-          <path d="M10 80 C 80 10, 200 10, 300 80 C 200 90, 80 90, 10 80 Z" fill="${text}" opacity=".18"/>
-          <path d="M120 140 C 200 90, 350 90, 420 140 C 340 150, 200 160, 120 140 Z" fill="${text}" opacity=".14"/>
-          <rect x="${w-140}" y="${h-120}" rx="48" ry="48" width="120" height="100" fill="${text}" opacity=".08"/>
+      function leafPaths(color) {
+        return `
+          <path d="M20 110 C 90 40, 230 40, 300 110 C 220 120, 90 120, 20 110 Z" fill="${color}" opacity=".18"/>
+          <path d="M130 160 C 210 110, 360 110, 430 160 C 350 170, 210 180, 130 160 Z" fill="${color}" opacity=".14"/>
+          <circle cx="520" cy="340" r="46" fill="${color}" opacity=".08"/>
         `;
+      }
+
+      function plantArtSrc(id, name, w=800, h=450) {
+        const [c1, c2, ink] = ART_THEMES[id] || ["#e2e8f0","#cbd5e1","#334155"];
         const svg =
           `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>
              <defs>
@@ -77,28 +79,33 @@
                </linearGradient>
              </defs>
              <rect width='100%' height='100%' fill='url(#g)'/>
-             <g>${leaf}</g>
+             <g>${leafPaths(ink)}</g>
              <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
                font-family='ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial'
-               font-size='36' font-weight='800' fill='${text}'>${name}</text>
+               font-size='34' font-weight='800' fill='${ink}'>${name}</text>
            </svg>`;
         return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
       }
 
-      // Twelve products. Images are generated from the id and name.
+      function PlantImg({ id, name }) {
+        const src = React.useMemo(() => plantArtSrc(id, name), [id, name]);
+        return <img src={src} alt={name} />;
+      }
+
+      // Twelve products, each with name, price, and generated image id
       const PRODUCTS = [
-        { id:"snake",    name:"Snake Plant",   price:15, category:["Air Purifying"], desc:"Produces oxygen at night, improving air quality." },
-        { id:"spider",   name:"Spider Plant",  price:12, category:["Air Purifying"], desc:"Filters formaldehyde and xylene from the air." },
-        { id:"peace",    name:"Peace Lily",    price:18, category:["Air Purifying","Aromatic"], desc:"Removes mold spores and purifies the air." },
-        { id:"aloe",     name:"Aloe Vera",     price:10, category:["Air Purifying"], desc:"Succulent that soothes skin and brightens a room." },
-        { id:"rubber",   name:"Rubber Plant",  price:16, category:["Air Purifying"], desc:"Glossy leaves and strong air filtering." },
-        { id:"boston",   name:"Boston Fern",   price:14, category:["Air Purifying"], desc:"Classic fronds that love humidity." },
-        { id:"ivy",      name:"English Ivy",   price:11, category:["Air Purifying"], desc:"Trailing vine known for filtering air." },
-        { id:"pothos",   name:"Pothos",        price:12, category:["Air Purifying"], desc:"Beginner friendly vine, also called Devil's Ivy." },
-        { id:"monstera", name:"Monstera",      price:20, category:["Air Purifying"], desc:"Iconic split leaves, bright indirect light." },
-        { id:"rosemary", name:"Rosemary",      price:15, category:["Aromatic"], desc:"Fragrant culinary herb with evergreen texture." },
-        { id:"lavender", name:"Lavender",      price:17, category:["Aromatic"], desc:"Soothing scent with purple blooms." },
-        { id:"mint",     name:"Mint",          price:9,  category:["Aromatic"], desc:"Fresh aroma for tea and cooking." }
+        { id:"snake",    name:"Snake Plant",   price:15, desc:"Produces oxygen at night, improving air quality.", category:["Air Purifying"] },
+        { id:"spider",   name:"Spider Plant",  price:12, desc:"Filters formaldehyde and xylene from the air.",     category:["Air Purifying"] },
+        { id:"peace",    name:"Peace Lily",    price:18, desc:"Removes mold spores and purifies the air.",         category:["Air Purifying","Aromatic"] },
+        { id:"aloe",     name:"Aloe Vera",     price:10, desc:"Succulent that soothes skin and brightens a room.", category:["Air Purifying"] },
+        { id:"rubber",   name:"Rubber Plant",  price:16, desc:"Glossy leaves and strong air filtering.",            category:["Air Purifying"] },
+        { id:"boston",   name:"Boston Fern",   price:14, desc:"Classic fronds that love humidity.",                 category:["Air Purifying"] },
+        { id:"ivy",      name:"English Ivy",   price:11, desc:"Trailing vine known for filtering air.",             category:["Air Purifying"] },
+        { id:"pothos",   name:"Pothos",        price:12, desc:"Beginner friendly vine, also called Devil's Ivy.",   category:["Air Purifying"] },
+        { id:"monstera", name:"Monstera",      price:20, desc:"Iconic split leaves, bright indirect light.",        category:["Air Purifying"] },
+        { id:"rosemary", name:"Rosemary",      price:15, desc:"Fragrant culinary herb with evergreen texture.",     category:["Aromatic"] },
+        { id:"lavender", name:"Lavender",      price:17, desc:"Soothing scent with purple blooms.",                 category:["Aromatic"] },
+        { id:"mint",     name:"Mint",          price:9,  desc:"Fresh aroma for tea and cooking.",                   category:["Aromatic"] }
       ];
 
       const CATEGORIES = ["Air Purifying","Aromatic"];
@@ -151,11 +158,6 @@
             </div>
           </section>
         );
-      }
-
-      function PlantImg({ id, name }) {
-        const src = React.useMemo(() => plantArtSrc(id, name), [id, name]);
-        return <img src={src} alt={name} />;
       }
 
       function ProductCard({ p, onAdd }) {
